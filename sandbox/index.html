@@ -140,6 +140,14 @@
           getUrlParameter("idMigrationEnabled") === "false"
         ),
         prehidingStyle: ".personalization-container { opacity: 0 !important }",
+        // Advertising configuration
+        advertising: {
+          id5PartnerId: "1650",
+          rampIdJSPath:
+            "https://ats-wrapper.privacymanager.io/ats-modules/db58949f-d696-469b-a8ac-a04382bc5183/ats.js",
+          advertiserIds: [83565, 83567, 83569],
+        },
+
         onBeforeEventSend: function (options) {
           const xdm = options.xdm;
           const data = options.data;
@@ -195,6 +203,14 @@
         orgId: "97D1F3F459CE0AD80A495CBE@AdobeOrg",
         debugEnabled: true,
         clickCollectionEnabled: false,
+        // Advertising configuration for second instance
+        advertising: {
+          id5PartnerId: "1650",
+          rampIdJSPath:
+            "https://ats-wrapper.privacymanager.io/ats-modules/db58949f-d696-469b-a8ac-a04382bc5183/ats.js",
+          advertiserIds: [83565, 83567, 83569],
+        },
+
         onBeforeEventSend: function (options) {
           const xdm = options.xdm;
           const eventType = xdm.eventType;
@@ -224,6 +240,13 @@
         thirdPartyCookiesEnabled: false,
         debugEnabled: true,
         clickCollectionEnabled: false,
+        // Advertising configuration for CJM instance
+        advertising: {
+          id5PartnerId: "1650",
+          rampIdJSPath:
+            "https://ats-wrapper.privacymanager.io/ats-modules/db58949f-d696-469b-a8ac-a04382bc5183/ats.js",
+          advertiserIds: [83565, 83567, 83569],
+        },
       });
     </script>
   </head>
