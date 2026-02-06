@@ -12,6 +12,10 @@ governing permissions and limitations under the License.
 
 import { vi, beforeEach, describe, it, expect } from "vitest";
 import createAdConversionHandler from "../../../../../../src/components/Advertising/handlers/createAdConversionHandler.js";
+import {
+  LAST_CLICK_COOKIE_KEY,
+  LOG_COOKIE_WRITTEN,
+} from "../../../../../../src/components/Advertising/constants/index.js";
 
 // Mock network operations to prevent real network calls
 vi.mock("fetch", () => vi.fn());
@@ -36,6 +40,7 @@ describe("Advertising::createAdConversionHandler", () => {
   let sendEdgeNetworkRequest;
   let consent;
   let logger;
+  let cookieManager;
   let handler;
   let createDataCollectionRequestPayload;
   let createDataCollectionRequest;
@@ -58,6 +63,10 @@ describe("Advertising::createAdConversionHandler", () => {
       warn: vi.fn(),
     };
 
+    cookieManager = {
+      setValue: vi.fn(),
+    };
+
     // Mock the request creation functions
     const mockCreateDataCollectionRequestPayload = await import(
       "../../../../../../src/utils/request/createDataCollectionRequestPayload.js"
@@ -78,6 +87,7 @@ describe("Advertising::createAdConversionHandler", () => {
       sendEdgeNetworkRequest,
       consent,
       logger,
+      cookieManager,
     });
   });
 
@@ -164,28 +174,111 @@ describe("Advertising::createAdConversionHandler", () => {
       ).rejects.toThrow("Network failed");
     });
 
-    it("should handle options parameter", async () => {
-      const mockEvent = {
-        finalize: vi.fn(),
-      };
-
-      const mockPayload = {
-        addEvent: vi.fn(),
-      };
-
+    it("should write click cookie and log when skwcid is provided", async () => {
+      const mockEvent = { finalize: vi.fn() };
+      const mockPayload = { addEvent: vi.fn() };
       const mockRequest = {
         body: { events: [] },
         getUseIdThirdPartyDomain: vi.fn().mockReturnValue(false),
       };
-
       createDataCollectionRequestPayload.mockReturnValue(mockPayload);
       createDataCollectionRequest.mockReturnValue(mockRequest);
       sendEdgeNetworkRequest.mockResolvedValue({ status: "success" });
 
-      const options = { customOption: "value" };
-      await handler.trackAdConversion({ event: mockEvent, options });
+      await handler.trackAdConversion({
+        event: mockEvent,
+        skwcid: "test-skwcid",
+        efid: null,
+      });
 
-      expect(createDataCollectionRequestPayload).toHaveBeenCalled();
+      expect(cookieManager.setValue).toHaveBeenCalledWith(
+        LAST_CLICK_COOKIE_KEY,
+        expect.objectContaining({
+          click_time: expect.any(Number),
+          skwcid: "test-skwcid",
+        }),
+      );
+      expect(logger.info).toHaveBeenCalledWith(
+        LOG_COOKIE_WRITTEN,
+        expect.objectContaining({ skwcid: "test-skwcid" }),
+      );
+    });
+
+    it("should write click cookie and log when efid is provided", async () => {
+      const mockEvent = { finalize: vi.fn() };
+      const mockPayload = { addEvent: vi.fn() };
+      const mockRequest = {
+        body: { events: [] },
+        getUseIdThirdPartyDomain: vi.fn().mockReturnValue(false),
+      };
+      createDataCollectionRequestPayload.mockReturnValue(mockPayload);
+      createDataCollectionRequest.mockReturnValue(mockRequest);
+      sendEdgeNetworkRequest.mockResolvedValue({ status: "success" });
+
+      await handler.trackAdConversion({
+        event: mockEvent,
+        skwcid: null,
+        efid: "test-efid",
+      });
+
+      expect(cookieManager.setValue).toHaveBeenCalledWith(
+        LAST_CLICK_COOKIE_KEY,
+        expect.objectContaining({
+          click_time: expect.any(Number),
+          efid: "test-efid",
+        }),
+      );
+      expect(logger.info).toHaveBeenCalledWith(
+        LOG_COOKIE_WRITTEN,
+        expect.objectContaining({ efid: "test-efid" }),
+      );
+    });
+
+    it("should write click cookie with both skwcid and efid when provided", async () => {
+      const mockEvent = { finalize: vi.fn() };
+      const mockPayload = { addEvent: vi.fn() };
+      const mockRequest = {
+        body: { events: [] },
+        getUseIdThirdPartyDomain: vi.fn().mockReturnValue(false),
+      };
+      createDataCollectionRequestPayload.mockReturnValue(mockPayload);
+      createDataCollectionRequest.mockReturnValue(mockRequest);
+      sendEdgeNetworkRequest.mockResolvedValue({ status: "success" });
+
+      await handler.trackAdConversion({
+        event: mockEvent,
+        skwcid: "test-skwcid",
+        efid: "test-efid",
+      });
+
+      expect(cookieManager.setValue).toHaveBeenCalledWith(
+        LAST_CLICK_COOKIE_KEY,
+        expect.objectContaining({
+          click_time: expect.any(Number),
+          skwcid: "test-skwcid",
+          efid: "test-efid",
+        }),
+      );
+    });
+
+    it("should not write click cookie when neither skwcid nor efid is provided", async () => {
+      const mockEvent = { finalize: vi.fn() };
+      const mockPayload = { addEvent: vi.fn() };
+      const mockRequest = {
+        body: { events: [] },
+        getUseIdThirdPartyDomain: vi.fn().mockReturnValue(false),
+      };
+      createDataCollectionRequestPayload.mockReturnValue(mockPayload);
+      createDataCollectionRequest.mockReturnValue(mockRequest);
+      sendEdgeNetworkRequest.mockResolvedValue({ status: "success" });
+      cookieManager.setValue.mockClear();
+
+      await handler.trackAdConversion({ event: mockEvent });
+
+      expect(cookieManager.setValue).not.toHaveBeenCalledWith(
+        LAST_CLICK_COOKIE_KEY,
+        expect.anything(),
+      );
     });
   });
 
@@ -249,6 +342,18 @@ describe("Advertising::createAdConversionHandler", () => {
     });
 
     it("should create handler with all required dependencies", () => {
+      expect(() => {
+        createAdConversionHandler({
+          eventManager,
+          sendEdgeNetworkRequest,
+          consent,
+          logger,
+          cookieManager,
+        });
+      }).not.toThrow();
+    });
+
+    it("should create handler without cookieManager (optional)", () => {
       expect(() => {
         createAdConversionHandler({
           eventManager,

@@ -11,10 +11,8 @@ governing permissions and limitations under the License.
 */
 
 import {
-  LAST_CLICK_COOKIE_KEY,
   LAST_CONVERSION_TIME_KEY,
   LOG_AD_CONVERSION_START,
-  LOG_COOKIE_WRITTEN,
   LOG_CONVERSION_TIME_UPDATED,
   LOG_SENDING_CONVERSION,
   LOG_AD_CONVERSION_FAILED,
@@ -30,7 +28,6 @@ import {
  * @param {Object} params.logger - Logger instance
  * @param {string} params.skwcid - Search keyword click ID
  * @param {string} params.efid - EF ID parameter
- * @param {Object} params.optionsFromCommand - Additional options from command
  * @returns {Promise} Result of the ad conversion tracking
  */
 export default async function handleClickThrough({
@@ -45,23 +42,13 @@ export default async function handleClickThrough({
 
   const event = eventManager.createEvent();
 
-  if (skwcid || efid) {
-    const clickData = {
-      click_time: Date.now(),
-      ...(skwcid && { skwcid }),
-      ...(efid && { efid }),
-    };
-    cookieManager.setValue(LAST_CLICK_COOKIE_KEY, clickData);
-    logger.info(LOG_COOKIE_WRITTEN, clickData);
-  }
-
   const xdm = {
     _experience: {
       adcloud: {
         eventType: AD_CONVERSION_CLICK_EVENT_TYPE,
         campaign: {
           ...(efid && { experimentId: efid }),
-          ...(skwcid && { sampleGroupId: skwcid }),
+            ...(skwcid && { sampleGroupId: skwcid }),
         },
       },
     },
@@ -74,7 +61,7 @@ export default async function handleClickThrough({
 
   logger.info(LOG_SENDING_CONVERSION, xdm);
   try {
-    return await adConversionHandler.trackAdConversion({ event });
+    return await adConversionHandler.trackAdConversion({ event, skwcid, efid });
   } catch (error) {
     logger.error(LOG_AD_CONVERSION_FAILED, error);
     throw error;

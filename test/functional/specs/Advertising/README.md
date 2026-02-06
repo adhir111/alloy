@@ -56,9 +56,7 @@ const advertisingConfig = {
           "eventType": "advertising.clickThrough",
           "campaign": {
               "sampleGroupId": "s_kwcid_value",
-              "experimentId": "ef_id_value", 
-              "accountId": "advertiser1, advertiser2"
-          }
+              "experimentId": "ef_id_value"          }
         }
       }
     }

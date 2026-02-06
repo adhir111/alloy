@@ -38,6 +38,7 @@ export default ({
     sendEdgeNetworkRequest,
     consent,
     logger,
+    cookieManager,
   });
 
   // Shared state for onBeforeSendEvent hook
@@ -56,10 +57,8 @@ export default ({
           cookieManager,
           adConversionHandler,
           logger,
-          componentConfig,
           skwcid,
           efid,
-          optionsFromCommand,
         });
       }
       if (activeAdvertiserIds) {

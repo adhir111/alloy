@@ -14,16 +14,18 @@ import {
   createDataCollectionRequest,
   createDataCollectionRequestPayload,
 } from "../../../utils/request/index.js";
+import { LAST_CLICK_COOKIE_KEY, LOG_COOKIE_WRITTEN } from "../constants/index.js";
 
 /**
  * Creates a specialized handler for ad conversion events.
  * This follows a similar pattern to the media event handling in the StreamingMedia component.
  */
-export default ({ sendEdgeNetworkRequest, consent, logger }) => {
+export default ({ sendEdgeNetworkRequest, consent, logger, cookieManager }) => {
   /**
-   * Tracks an ad conversion event by sending it directly to the Edge Network
+   * Tracks an ad conversion event by sending it directly to the Edge Network.
+   * For click-through conversions, may write click data (skwcid/efid) to a cookie before sending.
    */
-  const trackAdConversion = ({ event }) => {
+  const trackAdConversion = ({ event, skwcid, efid }) => {
     const dataCollectionRequestPayload = createDataCollectionRequestPayload(); // Create payload container
     dataCollectionRequestPayload.addEvent(event);
     event.finalize();
@@ -32,6 +34,16 @@ export default ({ sendEdgeNetworkRequest, consent, logger }) => {
     });
 
     return consent.awaitConsent().then(() => {
+      // Do AdCloud Click Cookie Writing only after consent is granted
+      if (cookieManager && (skwcid || efid)) {
+        const clickData = {
+          click_time: Date.now(),
+          ...(skwcid && { skwcid }),
+          ...(efid && { efid }),
+        };
+        cookieManager.setValue(LAST_CLICK_COOKIE_KEY, clickData);
+        logger.info(LOG_COOKIE_WRITTEN, clickData);
+      }
       return sendEdgeNetworkRequest({ request })
         .then(() => {
           return { success: true };

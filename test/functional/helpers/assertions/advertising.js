@@ -76,23 +76,6 @@ export const validateClickThroughRequest = async (req, expected) => {
   const campaign = adCloud.campaign;
   await t.expect(campaign).ok("Missing campaign");
 
-  // Handle expected.accountId as string or array
-  if (Array.isArray(expected.accountId)) {
-    const actualIds =
-      campaign.advIds ||
-      (typeof campaign.accountId === "string" &&
-        campaign.accountId.split(/\s*,\s*/)) ||
-      [];
-    await t.expect(actualIds).eql(expected.accountId, "accountId mismatch");
-  } else {
-    // string comparison
-    const actualAccountId =
-      campaign.accountId ||
-      (Array.isArray(campaign.advIds) && campaign.advIds.join(", "));
-    await t
-      .expect(actualAccountId)
-      .eql(expected.accountId, "accountId mismatch");
-  }
 
   if (expected.sampleGroupId)
     await t

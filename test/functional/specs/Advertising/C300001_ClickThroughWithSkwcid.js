@@ -63,7 +63,6 @@ test("Test C300001: Click-through conversion with s_kwcid parameter should send 
 
   // validate it
   await validateClickThroughRequest(conversionRequest, {
-    accountId: ADVERTISING_CONSTANTS.DEFAULT_ADVERTISER_IDS_STRING,
     sampleGroupId: "test_keyword_123",
   });
 });
